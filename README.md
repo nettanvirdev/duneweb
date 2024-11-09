@@ -17,8 +17,9 @@
 - 📱 **Enhanced User Experience**
   - Smart download management
   - Progress tracking
-  - Gesture support
-  - Optimized performance
+  - Gesture support with SwipeRefreshLayout
+  - URL processing and search handling
+  - Navigation controls
 
 - ⚙️ **Developer Friendly**
   - Highly customizable
@@ -28,173 +29,177 @@
 
 ## 📦 Installation
 
-### Manual
+### Step 1: Download the Module
+1. Download the DuneWeb example project
+2. Extract the `duneweb` module from the root folder
 
-Copy the `DuneWebView.java` or `DuneWebView.kt` file to your project's package directory.
+### Step 2: Add Module to Your Project
+1. Open your project in Android Studio
+2. Go to File → New → Import Module
+3. Navigate to the extracted `duneweb` module directory
+4. Click 'Finish' to import the module
+
+### Step 3: Add Module Dependency
+Add the following to your app's `build.gradle`:
+
+```gradle
+dependencies {
+    implementation project(':duneweb')
+}
+```
+
+### Step 4: Sync Project
+Click 'Sync Now' in the Gradle notification bar or go to File → Sync Project with Gradle Files
 
 ## 🎯 Basic Usage
 
 ### XML Layout
 
 ```xml
-<com.yourpackagename.DuneWebView
-    android:id="@+id/webView"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+    android:id="@+id/swipeRefreshLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" />
+    android:layout_height="match_parent">
+
+    <com.levelpixel.DuneWebView
+        android:id="@+id/duneWebView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 ```
 
-### Kotlin Implementation
-
-```kotlin
-class MainActivity : AppCompatActivity() {
-    private lateinit var webView: DuneWebView
-    
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        
-        webView = findViewById(R.id.webView)
-        
-        // Enable protection features
-        webView.apply {
-            setAdBlockEnabled(true)
-            setPopupBlockEnabled(true)
-            setRedirectBlockEnabled(true)
-            loadUrl("https://example.com")
-        }
-    }
-    
-    override fun onBackPressed() {
-        if (webView.canGoBack()) webView.goBack()
-        else super.onBackPressed()
-    }
-}
-```
-
-### Java Implementation
+### Basic Implementation (Java)
 
 ```java
 public class MainActivity extends AppCompatActivity {
-    private DuneWebView webView;
+    private DuneWebView duneWebView;
+    private ProgressBar progressBar;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
-        webView = findViewById(R.id.webView);
+        duneWebView = findViewById(R.id.duneWebView);
+        progressBar = findViewById(R.id.progressBar);
         
-        // Enable protection features
-        webView.setAdBlockEnabled(true);
-        webView.setPopupBlockEnabled(true);
-        webView.setRedirectBlockEnabled(true);
-        webView.loadUrl("https://example.com");
-    }
-    
-    @Override
-    public void onBackPressed() {
-        if (webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
-        }
+        // Configure basic security features
+        duneWebView.setAdBlockEnabled(true);  // Block ads and trackers
+        duneWebView.setPopupBlockEnabled(true); // Block popups
+        duneWebView.setRedirectBlockEnabled(true); // Block unwanted redirects
+        duneWebView.setUseSystemDownloader(true); // Use system download manager
+        
+        // Load default URL
+        duneWebView.loadUrl("https://www.google.com");
+        
+        // Set up progress tracking
+        duneWebView.setProgressListener(progress -> {
+            progressBar.setVisibility(View.VISIBLE);
+            progressBar.setProgress(progress);
+            if (progress == 100) {
+                progressBar.setVisibility(View.INVISIBLE);
+            }
+        });
     }
 }
 ```
 
 ## 🛠️ Advanced Configuration
 
-### Ad Blocking (Kotlin)
-
-```kotlin
-webView.apply {
-    // Load blocklist from resource
-    loadAdBlockListFromResource(R.raw.adblockserverlist)
-    
-    // Add custom domains
-    addCustomBlockedDomain("ads.example.com")
-    addCustomBlockedDomain("analytics.example.com")
-    
-    // Remove specific domain
-    removeBlockedDomain("allowedads.example.com")
-    
-    // Check blocking status
-    val isBlocked = isBlockedDomain("ads.example.com")
-    
-    // Clear entire blocklist
-    clearBlocklist()
-}
-```
-
-### Download Management (Java)
+### Ad Blocking and Security
 
 ```java
-// Custom download handling
-webView.setCustomDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
-    DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-    request.setTitle("Download")
-           .setDescription("Downloading file...")
-           .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-    
-    DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
-    dm.enqueue(request);
-});
+// Load default ad blocklist
+duneWebView.loadAdBlockListFromResource(true, null);
 
-// Or use system downloader
-webView.setUseSystemDownloader(true);
+// Add custom blocked domains
+duneWebView.addCustomBlockedDomain("ads.example.com");
+duneWebView.addCustomBlockedDomain("trackers.example.com");
+
+// Remove specific domain from blocklist
+duneWebView.removeBlockedDomain("ads.example.com");
+
+// Clear entire blocklist
+duneWebView.clearBlocklist();
+
+// Check if domain is blocked
+boolean isBlocked = duneWebView.isBlockedDomain("facebook.com");
+
+// Get total number of blocked hosts
+int blockedHostsSize = duneWebView.getBlocklistSize();
 ```
 
-### Progress Tracking (Kotlin)
+### SwipeRefresh Implementation
 
-```kotlin
-webView.setProgressListener { progress ->
-    progressBar.apply {
-        setProgress(progress)
-        visibility = if (progress == 100) View.GONE else View.VISIBLE
-    }
+```java
+private void setupSwipeRefresh() {
+    SwipeRefreshLayout swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+    
+    swipeRefreshLayout.setOnRefreshListener(() -> {
+        duneWebView.reload();
+        new Handler().postDelayed(() -> 
+            swipeRefreshLayout.setRefreshing(false), 500);
+    });
+
+    // Set custom colors for refresh indicator
+    swipeRefreshLayout.setColorSchemeColors(
+        getColorFromAttr(this, R.attr.colorPrimary),
+        getColorFromAttr(this, R.attr.colorSecondary)
+    );
 }
 ```
 
-### Complete Example (Kotlin)
+### Navigation Controls
 
-```kotlin
-class BrowserActivity : AppCompatActivity() {
-    private lateinit var webView: DuneWebView
-    private lateinit var progressBar: ProgressBar
-    
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_browser)
-        
-        webView = findViewById(R.id.webView)
-        progressBar = findViewById(R.id.progressBar)
-        
-        webView.apply {
-            // Security features
-            setAdBlockEnabled(true)
-            setPopupBlockEnabled(true)
-            setRedirectBlockEnabled(true)
-            
-            // Load blocklist
-            loadAdBlockListFromResource(R.raw.adblockserverlist)
-            
-            // Custom domains
-            addCustomBlockedDomain("ads.example.com")
-            
-            // Progress tracking
-            setProgressListener { progress ->
-                progressBar.apply {
-                    setProgress(progress)
-                    visibility = if (progress == 100) View.GONE else View.VISIBLE
-                }
-            }
-            
-            // Download handling
-            setUseSystemDownloader(true)
-            
-            // Load initial URL
-            loadUrl("https://example.com")
-        }
+```java
+// Back navigation
+backButton.setOnClickListener(v -> {
+    if (duneWebView.canGoBack()) {
+        duneWebView.goBack();
+    } else {
+        duneWebView.loadUrl(DEFAULT_URL);
+    }
+});
+
+// Forward navigation
+forwardButton.setOnClickListener(v -> {
+    if (duneWebView.canGoForward()) {
+        duneWebView.goForward();
+    }
+});
+
+// Refresh page
+refreshButton.setOnClickListener(v -> duneWebView.reload());
+```
+
+### URL Processing
+
+```java
+private String processInput(String input) {
+    String cleanInput = input.trim().toLowerCase();
+
+    // Check for valid protocol
+    if (hasValidProtocol(cleanInput)) {
+        return input;
+    }
+
+    // Check if input looks like URL
+    if (looksLikeUrl(cleanInput)) {
+        return "https://" + input;
+    }
+
+    // Convert to search query
+    return buildSearchUrl(input);
+}
+
+private String buildSearchUrl(String query) {
+    try {
+        return "https://www.google.com/search?q=" + 
+            URLEncoder.encode(query, "UTF-8");
+    } catch (UnsupportedEncodingException e) {
+        return "https://www.google.com/search?q=" + 
+            query.replace(" ", "+");
     }
 }
 ```
@@ -219,7 +224,9 @@ Add these to your `AndroidManifest.xml`:
 | Redirect Protection | `setRedirectBlockEnabled(Boolean)` | Enable/disable redirect protection |
 | Download Handler | `setUseSystemDownloader(Boolean)` | Toggle system download manager |
 | Progress Tracking | `setProgressListener(listener)` | Set progress callback |
-| Custom Downloads | `setCustomDownloadListener(listener)` | Custom download handling |
+| Blocklist Management | `addCustomBlockedDomain(String)` | Add custom domain to blocklist |
+| Blocklist Clearing | `clearBlocklist()` | Clear entire blocklist |
+| Domain Check | `isBlockedDomain(String)` | Check if domain is blocked |
 
 ## 🤝 Contributing
 
@@ -241,7 +248,7 @@ Created by LevelPixel
 
 ## 📞 Support
 
-For support, please open an issue in the repository or contact us at support@levelpixel.com
+For support, please open an issue in the repository.
 
 ---
 
