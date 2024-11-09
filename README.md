@@ -27,7 +27,30 @@
   - Extensive configuration options
   - Both Java and Kotlin support
 
-## 📦 Installation
+
+
+### 📦 Installation Using AAR Files
+
+This release includes two AAR files:
+- `duneweb-release.aar`: Production release
+- `duneweb-debug.aar`: Debug version with additional logging
+
+To use the AAR files:
+
+1. Copy the desired AAR file from the [releases](https://github.com/nettanvirdev/dunewebview/releases) to your libs folder
+2. Add these dependencies to your app's `build.gradle`:
+```gradle
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.aar'])
+    // Required dependencies
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+}
+```
+
+
+
+## 📦 Installation Using Module
 
 ### Step 1: Download the Module
 1. Download the DuneWeb example project
